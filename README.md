@@ -30,6 +30,24 @@ Instead of using a traditional bare-metal super-loop layout, this application le
 * **Mutual Exclusion (Mutex):** Utilized a `SemaphoreHandle_t` mutex to protect the shared SPI bus resource, eliminating potential race conditions.
 * **Non-Blocking Time Management:** Replaced processor-wasting `HAL_Delay()` with kernel-managed `vTaskDelay(pdMS_TO_TICKS())` to maximize CPU efficiency.
 
+* ## 📊 Expected Serial Terminal Output (UART Console)
+When running, the microcontroller transmits real-time telemetry updates and periodic system diagnostics over UART at a 115200 baud rate. The low-priority diagnostics task runs every 5 seconds to report kernel health:
+
+```
+[SYS DIAGNOSTICS] Kernel Uptime: 5000 ms
+[TASK STATUS] SensorTask: RUNNING | LoggerTask: BLOCKED (Awaiting Queue)
+[TELEMETRY] Temp: 24.7°C | Pressure: 1013.25 hPa -> Logged to SPI Flash
+
+[SYS DIAGNOSTICS] Kernel Uptime: 10000 ms
+[TASK STATUS] SensorTask: RUNNING | LoggerTask: BLOCKED (Awaiting Queue)
+[TELEMETRY] Temp: 25.1°C | Pressure: 1013.25 hPa -> Logged to SPI Flash
+
+[SYS DIAGNOSTICS] Kernel Uptime: 15000 ms
+[TASK STATUS] SensorTask: RUNNING | LoggerTask: BLOCKED (Awaiting Queue)
+[TELEMETRY] Temp: 24.9°C | Pressure: 1013.25 hPa -> Logged to SPI Flash
+```
+
+
 ---
 
 ## 🔧 Software Tools Used
