@@ -1,56 +1,91 @@
-# RTOS-Based Smart Industrial Telemetry Node (STM32)
+# RTOS-Based Smart Industrial Telemetry Node
 
-## 📌 Project Overview
-This project is an advanced, independent technical implementation of a deterministic, multi-tasking telemetry firmware application designed for the **STM32F401RE** microcontroller (ARM Cortex-M4 core). Utilizing **FreeRTOS**, the system manages parallel tasks for sensor data acquisition, secure local logging, and system diagnostics with strict thread safety.
+**Platform:** STM32F401RE | ARM Cortex-M4  
+**Programming Language:** Embedded C  
+**RTOS:** FreeRTOS
 
----
+## Project Overview
 
-## 🛠️ Firmware Architecture & FreeRTOS Implementation
-Instead of using a traditional bare-metal super-loop layout, this application leverages a real-time kernel scheduler to manage resource-constrained execution across three parallel threads:
+This project demonstrates a real-time embedded firmware architecture using the STM32F401RE microcontroller and FreeRTOS.
 
-1. **Task 1: Sensor Interfacing (`vSensorTask`)**
-   - **Priority:** High (3)
-   - **Protocol:** I2C (Simulated BMP280 register reads)
-   - **Execution:** Samples environmental metrics every 1,000ms using `HAL_I2C_Mem_Read` and pushes packaged data into an inter-task queue.
+The application is organized into three independent tasks for sensor data acquisition, SPI communication, and UART-based system diagnostics.
 
-2. **Task 2: Data Logging (`vLoggerTask`)**
-   - **Priority:** Medium (2)
-   - **Protocol:** SPI (Flash memory/SD Card interfacing)
-   - **Execution:** Blocks efficiently until data lands in the queue. It acquires a shared-resource **Mutex** to prevent data corruption before initiating SPI transmissions via `HAL_SPI_Transmit`.
+It demonstrates important embedded systems concepts such as task scheduling, inter-task communication, mutual exclusion, peripheral interfacing, and periodic task execution.
 
-3. **Task 3: Diagnostic CLI (`vDiagnosticsTask`)**
-   - **Priority:** Low (1)
-   - **Protocol:** UART (Serial communication)
-   - **Execution:** Wakes up every 5,000ms to output real-time system performance metrics, task execution flags, and kernel uptime ticks via `HAL_UART_Transmit`.
+## Firmware Architecture
 
----
+### 1. Sensor Acquisition Task — `vSensorTask`
+- **Priority:** 3 (High)
+- **Interface:** I2C
+- Performs periodic I2C register reads from a sensor address configured for a BMP280.
+- Packages sensor-related values into a data structure.
+- Sends the data to the logger task using a FreeRTOS queue.
+- Uses a 1-second periodic delay.
 
-## 🎛️ Key Engineering Concepts Demonstrated
-* **Thread-Safe Data Communication:** Implemented **FreeRTOS Queues** to pass complex sensor structures safely between processing and storage tasks.
-* **Mutual Exclusion (Mutex):** Utilized a `SemaphoreHandle_t` mutex to protect the shared SPI bus resource, eliminating potential race conditions.
-* **Non-Blocking Time Management:** Replaced processor-wasting `HAL_Delay()` with kernel-managed `vTaskDelay(pdMS_TO_TICKS())` to maximize CPU efficiency.
+**Implementation note:** The current code does not perform complete BMP280 compensation calculations. Temperature and pressure values are partly simulated.
 
-* ## 📊 Expected Serial Terminal Output (UART Console)
-When running, the microcontroller transmits real-time telemetry updates and periodic system diagnostics over UART at a 115200 baud rate. The low-priority diagnostics task runs every 5 seconds to report kernel health:
+### 2. Logger Task — `vLoggerTask`
+- **Priority:** 2 (Medium)
+- **Interface:** SPI
+- Receives data through a FreeRTOS queue.
+- Uses a mutex to protect SPI access.
+- Transmits a 2-byte test frame over SPI.
 
+**Implementation note:** External flash or SD card storage is not implemented in the current version.
+
+### 3. Diagnostics Task — `vDiagnosticsTask`
+- **Priority:** 1 (Low)
+- **Interface:** UART
+- Periodically reports kernel uptime through UART.
+- Uses FreeRTOS tick information to calculate elapsed time.
+- Runs at 5-second intervals.
+
+## Key Embedded Concepts
+
+- **FreeRTOS Task Scheduling:** Three tasks with different priority levels.
+- **Inter-Task Communication:** Queue-based transfer of sensor data.
+- **Mutual Exclusion:** Mutex-based protection of the SPI resource.
+- **Periodic Task Execution:** `vTaskDelay()` and `pdMS_TO_TICKS()`.
+- **Peripheral Interfacing:** I2C, SPI, and UART using STM32 HAL APIs.
+- **ARM Cortex-M4:** Firmware development for the STM32F401RE platform.
+
+## Hardware and Software
+
+| Category | Component |
+|---|---|
+| Microcontroller | STM32F401RE |
+| Architecture | ARM Cortex-M4 |
+| RTOS | FreeRTOS |
+| Programming Language | Embedded C |
+| Peripheral Interfaces | I2C, SPI, UART |
+| Hardware Library | STM32 HAL |
+| Development Tools | STM32CubeIDE / Keil (as applicable) |
+
+## Project Structure
+
+```text
+RTOS-Smart-Telemetry-Node-STM32/
+│
+├── main.c
+└── README.md
 ```
-[SYS DIAGNOSTICS] Kernel Uptime: 5000 ms
-[TASK STATUS] SensorTask: RUNNING | LoggerTask: BLOCKED (Awaiting Queue)
-[TELEMETRY] Temp: 24.7°C | Pressure: 1013.25 hPa -> Logged to SPI Flash
 
-[SYS DIAGNOSTICS] Kernel Uptime: 10000 ms
-[TASK STATUS] SensorTask: RUNNING | LoggerTask: BLOCKED (Awaiting Queue)
-[TELEMETRY] Temp: 25.1°C | Pressure: 1013.25 hPa -> Logged to SPI Flash
+## Current Implementation Status
 
-[SYS DIAGNOSTICS] Kernel Uptime: 15000 ms
-[TASK STATUS] SensorTask: RUNNING | LoggerTask: BLOCKED (Awaiting Queue)
-[TELEMETRY] Temp: 24.9°C | Pressure: 1013.25 hPa -> Logged to SPI Flash
-```
+The current source code demonstrates the FreeRTOS task structure, queue-based communication, mutex usage, peripheral initialization, and UART uptime diagnostics.
 
+The sensor values are partly simulated, SPI transmission uses a test frame, and external storage and live sensor-data logging are not implemented.
 
----
+## Future Improvements
 
-## 🔧 Software Tools Used
-* **IDE:** STM32CubeIDE / Keil uVision
-* **RTOS Kernel:** FreeRTOS
-* **Hardware Abstraction:** STM32 HAL Components
+- Implement complete BMP280 sensor initialization and measurement compensation.
+- Add actual SPI flash or SD card storage.
+- Implement detailed task-state diagnostics.
+- Add error handling for peripheral communication.
+- Validate the complete firmware on physical hardware.
+
+## Author
+
+**Balija Neela Sri**
+
+Embedded Systems | Firmware Development | Embedded C
