@@ -3,6 +3,8 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include <stdio.h>
+#include <string.h>
 
 /* --- Peripherals Handles --- */
 I2C_HandleTypeDef hi2c1;
@@ -38,16 +40,23 @@ int main(void) {
 
     /* 2. Create Mutex to protect the shared SPI bus resource */
     xSPI_Mutex = xSemaphoreCreateMutex();
+if (xSensorQueue != NULL && xSPI_Mutex != NULL) {
 
-    if (xSensorQueue != NULL && xSPI_Mutex != NULL) {
-        /* 3. Create Tasks with Deterministic Priorities */
-        xTaskCreate(vSensorTask, "SensorTask", 128, NULL, 3, NULL);  // Highest priority
-        xTaskCreate(vLoggerTask, "LoggerTask", 128, NULL, 2, NULL);  // Medium priority
-        xTaskCreate(vDiagnosticsTask, "DiagTask", 128, NULL, 1, NULL); // Lowest priority
+    BaseType_t sensorStatus;
+    BaseType_t loggerStatus;
+    BaseType_t diagnosticsStatus;
 
-        /* 4. Start the Real-Time Scheduler */
+    sensorStatus = xTaskCreate(vSensorTask, "SensorTask", 128, NULL, 3, NULL);
+    loggerStatus = xTaskCreate(vLoggerTask, "LoggerTask", 128, NULL, 2, NULL);
+    diagnosticsStatus = xTaskCreate(vDiagnosticsTask, "DiagTask", 128, NULL, 1, NULL);
+
+    if (sensorStatus == pdPASS &&
+        loggerStatus == pdPASS &&
+        diagnosticsStatus == pdPASS) {
+
         vTaskStartScheduler();
     }
+}
 
     while (1) {
         // Should never reach here if scheduler starts
@@ -60,10 +69,13 @@ void vSensorTask(void *pvParameters) {
     uint8_t rawBuf[4];
 
     while (1) {
-        // Simulate reading from an I2C Sensor (e.g., BMP280 at address 0x76)
-        HAL_I2C_Mem_Read(&hi2c1, (0x76 << 1), 0xF7, I2C_MEMADD_SIZE_8BIT, rawBuf, 4, 100);
-        
-        // Mocking calculated telemetry metrics
+       if (HAL_I2C_Mem_Read(&hi2c1, (0x76 << 1), 0xF7,
+                     I2C_MEMADD_SIZE_8BIT, rawBuf, 4, 100) != HAL_OK) {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    continue;
+}
+        // Generate demonstration telemetry values from the received sensor byte.
+       // These are NOT calibrated BMP280 temperature or pressure measurements.
         data.temperature = 24.5f + ((float)(rawBuf[0] % 10) / 10.0f);
         data.pressure = 1013.25f;
 
@@ -85,8 +97,8 @@ void vLoggerTask(void *pvParameters) {
             
             // Take Mutex before using shared SPI line
             if (xSemaphoreTake(xSPI_Mutex, portMAX_DELAY) == pdTRUE) {
-                
-                // Transmit data safely over SPI
+                // Transmit a 2-byte test frame over SPI.
+               // This is not actual sensor-data storage.
                 HAL_SPI_Transmit(&hspi1, spiTxData, 2, 100);
                 
                 // Release Mutex immediately after transmission
