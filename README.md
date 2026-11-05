@@ -76,11 +76,11 @@ The following STM32CubeIDE screenshots demonstrate the microcontroller configura
 
 ### Clock Configuration
 
-![Clock Configuration](docs/images/clock_configuration.png)
+![Clock Configuration](doc/images/clock_configuration.png)
 
 ### Pinout & Peripheral Configuration
 
-![Pinout Configuration](docs/images/pinout_configuration.png)
+![Pinout Configuration](doc/images/pinout_configuration.png)
 
 ### STM32CubeMX Configuration File
 
